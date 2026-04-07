@@ -1,0 +1,13 @@
+dist/
+*.egg-info/
+__pycache__/
+*.pyc
+.env
+.env.local
+.pypirc
+*.key
+*.pem
+sdk_build/
+_nuitka_build/
+*.so
+*.pyd
