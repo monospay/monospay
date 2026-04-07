@@ -12,9 +12,9 @@ jobs:
           python-version: "3.11"
       - run: pip install build twine
       - run: python -m build
-        working-directory: mono_sdk
+        working-directory: sdk
       - run: twine upload dist/*
-        working-directory: mono_sdk
+        working-directory: sdk
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPIN }}
