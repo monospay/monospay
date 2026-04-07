@@ -127,7 +127,7 @@ def test_connection(api_key: str, gateway_url: str) -> bool:
             data = json.loads(r.read())
             return data.get("status") in ("HEALTHY", "OK", "ok")
     except urllib.error.HTTPError as e:
-        return e.code < 500  # 401/404 = connected, just wrong key
+        return e.code == 401  # only 401 means server is reachable
     except Exception:
         return False
 

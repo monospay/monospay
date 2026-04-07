@@ -127,7 +127,7 @@ def test_connection(api_key: str, gateway_url: str) -> bool:
             data = json.loads(r.read())
             return data.get("status") in ("HEALTHY", "OK", "ok")
     except urllib.error.HTTPError as e:
-        return e.code < 500  # 401/404 = connected, just wrong key
+        return e.code == 401  # only 401 means server is reachable
     except Exception:
         return False
 
@@ -210,8 +210,6 @@ def cmd_init(args: argparse.Namespace) -> None:
     if api_key:
         write_env_to_profile("MONO_API_KEY", api_key)
         print(f"  \033[32m✓\033[0m  MONO_API_KEY written to {detect_shell_profile()}")
-    write_env_to_profile("MONO_GATEWAY_URL", gateway_url)
-
     # ── Step 4: Connection test ────────────────────────────────────────────────
     print()
     if api_key:
