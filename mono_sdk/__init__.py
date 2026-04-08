@@ -28,7 +28,7 @@ from mono_sdk.models import (
     TrustStats,
 )
 
-__version__ = "0.4.2"
+__version__ = "0.4.4"
 __all__ = [
     "MonoClient",
     "MonoError",

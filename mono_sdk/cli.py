@@ -329,11 +329,12 @@ def cmd_pay(args: argparse.Namespace) -> None:
 
 def cmd_balance(args: argparse.Namespace) -> None:
     client = get_client()
-    nodes  = client.list_nodes()
+    result = client.balance()
+    usdc = float(str(result.get("balance_usdc", result.get("available_usdc", "0"))).replace(",", "."))
+    name = result.get("name", "agent")
     print()
-    for n in nodes:
-        icon = "\033[32m●\033[0m" if n.status == "active" else "\033[31m○\033[0m"
-        print(f"  {icon}  {n.name:<22}  ${n.balance:.3f} USDC  [{n.status}]")
+    print(f"  \033[32m●\033[0m  {name:<22}  ${usdc:.3f} USDC  [active]")
+    _low_balance_warn(usdc)
     print()
 
 
