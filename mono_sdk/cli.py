@@ -222,17 +222,11 @@ def cmd_init(args: argparse.Namespace) -> None:
 
     # ── Step 5: Done ──────────────────────────────────────────────────────────
     print()
-    print("  \033[1m\033[32mAll set.\033[0m\n")
-    print("  Quick start:\n")
-    print("  \033[2m  from mono_sdk import MonoClient\033[0m")
-    print("  \033[2m  client = MonoClient(api_key=\"...\")\033[0m")
-    print("  \033[2m  client.health()\033[0m")
+    print("  \033[1m\033[32mAll set.\033[0m  Try it now:\n")
+    print("  \033[1m  mono health\033[0m       — system status")
+    print("  \033[1m  mono balance\033[0m      — your budget")
+    print("  \033[1m  mono charge 0.01\033[0m  — deduct $0.01 USDC")
     print()
-    if is_cloud:
-        print("  Cloud/CI detected. Set MONO_API_KEY as an environment secret.\n")
-    else:
-        print("  Restart your terminal, or run:")
-        print(f"  \033[1m  source {detect_shell_profile()}\033[0m\n")
 
 
 # ── mono config ───────────────────────────────────────────────────────────────
