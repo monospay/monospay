@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 # ── Package identity ───────────────────────────────────────────────────────────
 [project]
 name = "mono-m2m-sdk"
-version = "0.4.5"
+version = "0.4.6"
 description = "Financial infrastructure for autonomous AI agents — monospay.com"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -43,17 +43,13 @@ Repository    = "https://github.com/Agash0818/mono-sdk"
 
 # ── Hatchling build config ─────────────────────────────────────────────────────
 #
-# Project layout:
-#   mono_sdk/            ← project root (this file lives here)
-#   └── mono_sdk/        ← Python package (what gets installed)
+# Project layout (repo root = this directory):
+#   ./                   ← project root, pyproject.toml lives here
+#   └── mono_sdk/        ← Python package (installed as `import mono_sdk`)
 #       ├── __init__.py
 #       ├── cli.py
 #       ├── client.py
 #       └── ...
-#
-# `packages = ["mono_sdk"]` tells hatchling to look for a directory called
-# `mono_sdk` relative to the project root and include it in the wheel.
-# After install: `import mono_sdk` resolves to mono_sdk/mono_sdk/__init__.py ✓
 #
 [tool.hatch.build]
 sources = ["."]
@@ -62,7 +58,6 @@ sources = ["."]
 packages = ["mono_sdk"]
 
 [tool.hatch.build.targets.sdist]
-# Only ship the actual package — no ghost files from the repo root.
 include = [
     "mono_sdk/**/*.py",
     "README.md",
