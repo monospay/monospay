@@ -220,12 +220,39 @@ def cmd_init(args: argparse.Namespace) -> None:
         else:
             print(f"\r  \033[33m!\033[0m  Could not connect — check your API key or network")
 
-    # ── Step 5: Done ──────────────────────────────────────────────────────────
+    # ── Step 5: Setup complete — auto health + balance check ──────────────────
     print()
-    print("  \033[1m\033[32mAll set.\033[0m  Try it now:\n")
-    print("  \033[1m  mono health\033[0m       — system status")
-    print("  \033[1m  mono balance\033[0m      — your budget")
-    print("  \033[1m  mono charge 0.01\033[0m  — deduct $0.01 USDC")
+
+    if api_key:
+        gateway_url_check = get_setting("gateway_url") or DEFAULT_API
+        try:
+            req = urllib.request.Request(
+                f"{gateway_url_check.rstrip('/')}/health"
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                h = json.loads(resp.read())
+            healthy = h.get("status") in ("ok", "OK", "HEALTHY")
+
+            client = MonoClient(api_key=api_key, base_url=gateway_url_check)
+            bal = client.balance()
+            usdc = float(
+                str(bal.get("balance_usdc", bal.get("available_usdc", "0")))
+                .replace(",", ".")
+            )
+
+            if healthy:
+                print(
+                    f"  \033[1m\033[32m✅ Setup complete.\033[0m "
+                    f"Connected to Base Mainnet. "
+                    f"Your current balance is: \033[1m{usdc:.2f} USDC\033[0m"
+                )
+            else:
+                print("  \033[33m⚠️\033[0m  Connected but system degraded.")
+        except Exception:
+            print("  \033[33m!\033[0m  Could not reach API — run: mono health")
+    else:
+        print("  \033[1m\033[32mAll set.\033[0m  Set MONO_API_KEY to get started.")
+
     print()
 
 
