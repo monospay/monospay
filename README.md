@@ -1,21 +1,57 @@
 # mono SDK
 
-Financial infrastructure for autonomous AI agents.
-
+Financial infrastructure for autonomous AI agents.  
 Your agent can think. Now it can pay.
 
-## Installation
+---
+
+## Install
+
+```bash
+curl -fsSL https://monospay.com/install.sh | bash
+```
+
+Or manually:
 
 ```bash
 pip install mono-m2m-sdk
 mono init
 ```
 
-Works on macOS, Linux, Windows. Python 3.9+.
+Works on macOS, Linux, Windows · Python 3.9+
 
 ---
 
-## Quickstart
+## CLI — Quick Reference
+
+```bash
+# Setup (run once)
+mono init
+
+# Balance
+mono balance
+
+# Transfer USDC to another agent
+mono transfer --to <agent_id> --amount 1.50
+
+# On-chain settlement
+mono settle --to <agent_id> --amount 1.50
+
+# Fleet overview
+mono status
+
+# Node management
+mono nodes create --name "Agent 01"
+mono nodes kill   --id <node_id>
+
+# Config & diagnostics
+mono config show
+mono health
+```
+
+---
+
+## Python SDK
 
 ```python
 import os
@@ -27,78 +63,58 @@ client = MonoClient(api_key=os.environ["MONO_API_KEY"])
 balance = client.balance()
 print(f"Budget: ${balance['available_usdc']}")  # → Budget: $50.00
 
-# Charge for a task
+# Deduct cost of an AI call
 client.charge(0.003, "gpt-4o reasoning call")
 
-# Pay another agent
-client.transfer(to="agent_data_02", amount=1.50)
+# Pay another agent instantly
+client.transfer(to="agent_02", amount=1.50)
+
+# On-chain settlement
+result = client.settle(to="agent_02", amount=1.50)
+print(result.transaction_id)
 ```
 
-That's it. No wallets. No gas. No KYC.
+No wallets. No gas. No KYC.
 
 ---
 
 ## How it works
 
-monospay is a USDC settlement layer built on Base. Your agent gets a budget
-assigned by a developer through the dashboard. Every `charge()` or `transfer()`
-is an off-chain ledger write — confirmed in 15ms, settled on-chain periodically.
+```
+Developer  →  funds agent via dashboard (USDC)
+Agent      →  spends via charge() / transfer()
+Dashboard  →  real-time balance as agent runs
+```
 
-```
-Developer (dashboard) → funds agent with USDC
-Agent (your code)     → spends via client.charge() / client.transfer()
-Dashboard             → shows real-time balance as agent spends
-```
+Every `charge()` or `transfer()` is an off-chain ledger write — confirmed in 15ms,
+settled on Base L2 periodically.
 
 ---
 
-## API reference
-
-### `client.balance()`
-Returns the agent's current off-chain ledger balance.
-
-```python
-balance = client.balance()
-# {'available_usdc': 47.25, 'agent_id': 'agent_01', 'currency': 'USDC'}
-```
-
-### `client.charge(amount, memo="")`
-Deducts `amount` USDC from this agent's budget.
-
-```python
-client.charge(0.02, "web search call")
-# Raises MonoInsufficientBalance if budget is exhausted
-```
-
-### `client.transfer(to, amount, memo="")`
-Pays another agent within the same monospay account. Off-chain, instant.
-
-```python
-client.transfer(to="agent_executor", amount=5.00, memo="task completed")
-```
-
-### `client.settle(to, amount)`
-Execute an M2M settlement between agents.
-
-```python
-result = client.settle(to="agent_02", amount=1.50)
-print(result.transaction_id)
-```
-
----
-
-## LangChain integration
+## LangChain
 
 ```bash
 pip install "mono-m2m-sdk[langchain]"
 ```
 
 ```python
-from mono_sdk.langchain_tools import MonoPayTool
-from langchain.agents import create_react_agent
+from mono_sdk.langchain_tools import MonoToolkit
 
-tools = [MonoPayTool(api_key=os.environ["MONO_API_KEY"])]
-agent = create_react_agent(llm=llm, tools=tools)
+toolkit = MonoToolkit(api_key=os.environ["MONO_API_KEY"])
+tools   = toolkit.get_tools()   # LLM inference, RPC, price oracle
+```
+
+---
+
+## OpenAI Function Calling
+
+```python
+from mono_sdk.openai_functions import get_mono_tools, handle_tool_call
+
+tools    = get_mono_tools()          # drop-in OpenAI tool schemas
+response = openai.chat.completions.create(model="gpt-4o", tools=tools, ...)
+result   = handle_tool_call(tool_call.function.name,
+                             tool_call.function.arguments, client)
 ```
 
 ---
@@ -106,14 +122,14 @@ agent = create_react_agent(llm=llm, tools=tools)
 ## Error handling
 
 ```python
-from mono_sdk.errors import MonoInsufficientBalance, MonoAuthError
+from mono_sdk.errors import InsufficientBalanceError, AuthenticationError
 
 try:
-    client.charge(100.00, "expensive call")
-except MonoInsufficientBalance:
-    print("Agent is out of budget — request more funds from operator.")
-except MonoAuthError:
-    print("Invalid API key.")
+    client.charge(999.00)
+except InsufficientBalanceError:
+    print("Out of budget — top up at monospay.com/dashboard")
+except AuthenticationError:
+    print("Invalid key — run: mono init")
 ```
 
 ---
@@ -122,15 +138,15 @@ except MonoAuthError:
 
 | Variable | Description |
 |---|---|
-| `MONO_API_KEY` | Agent API key from monospay dashboard |
-| `MONO_GATEWAY_URL` | Override gateway URL (default: `https://api.monospay.com`) |
+| `MONO_API_KEY` | Agent API key (from monospay dashboard) |
+| `MONO_GATEWAY_URL` | Override API endpoint (optional) |
 
 ---
 
 ## Links
 
-- Dashboard: [monospay.com](https://monospay.com)
-- API endpoint: `https://api.monospay.com/v1`
-- PyPI: [pypi.org/project/mono-m2m-sdk](https://pypi.org/project/mono-m2m-sdk/)
-- Contract: [BaseScan 0xA9DC3105…](https://basescan.org/address/0xA9DC3105ec1A84E4Bc3c9702dFC772a6efA2CDBA)
+- Dashboard · [monospay.com](https://monospay.com)
+- Docs · [monospay.com/docs](https://monospay.com/docs)
+- PyPI · [mono-m2m-sdk](https://pypi.org/project/mono-m2m-sdk/)
+- Contract · [BaseScan 0xA9DC3105…](https://basescan.org/address/0xA9DC3105ec1A84E4Bc3c9702dFC772a6efA2CDBA)
 - Built on [Base](https://base.org) · Settled in [USDC](https://www.circle.com/usdc)
