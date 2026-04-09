@@ -19,34 +19,35 @@ Works on macOS, Linux, Windows · Python 3.9+
 
 ---
 
-## CLI
+## How it works
 
-```bash
-mono balance                                   # Show balance
-mono transfer --to <agent_id> --amount 1.50    # Send USDC
-mono settle   --to <agent_id> --amount 1.50    # On-chain settle
-mono health                                    # Gateway status
-mono config show                               # Show config
+mono is for **developers building AI agents** — not end users.
+
 ```
+1. You create agents on monospay.com/dashboard
+2. Each agent gets a unique ID and API key
+3. Your code uses the SDK to transfer USDC between agents automatically
+```
+
+The agent IDs come from your dashboard. You wire them up in your code once — then agents pay each other autonomously.
 
 ---
 
-## Python SDK
+## Python SDK — Quickstart
 
 ```python
 from mono_sdk import MonoClient
 
-client = MonoClient(api_key="mono_live_...")
+# Each agent has its own API key (from dashboard → Agents → Issue API key)
+agent_a = MonoClient(api_key="mono_live_...")
+agent_b_id = "your-agent-b-id-from-dashboard"
 
-# Check balance
-balance = client.balance()
+# Agent A checks its balance
+balance = agent_a.balance()
 print(f"Budget: ${balance['available_usdc']}")  # → Budget: $50.00
 
-# Pay another agent instantly
-client.transfer(to="agent_02", amount=1.50)
-
-# On-chain settlement
-result = client.settle(to="agent_02", amount=1.50)
+# Agent A pays Agent B instantly
+result = agent_a.transfer(to=agent_b_id, amount=1.50)
 print(result.transaction_id)
 ```
 
@@ -54,16 +55,25 @@ No wallets. No gas. No KYC.
 
 ---
 
-## How it works
+## CLI — for developers
+
+The CLI lets you inspect and manage your agents from the terminal.
+
+```bash
+mono balance          # Show your agent's balance
+mono health           # Check gateway status
+mono config show      # Show current config
+```
+
+Transfers happen in your code via the Python SDK — not manually via CLI.
+
+---
+
+## Where do I find the agent ID?
 
 ```
-Developer  →  funds agent via dashboard (USDC)
-Agent      →  spends via transfer() / settle()
-Dashboard  →  real-time balance as agent runs
+monospay.com/dashboard → Agents → click your agent → copy ID
 ```
-
-Every `transfer()` is an off-chain ledger write — confirmed in 15ms,
-settled on Base L2 periodically.
 
 ---
 
@@ -88,7 +98,7 @@ tools   = toolkit.get_tools()
 from mono_sdk.errors import InsufficientBalanceError, AuthenticationError
 
 try:
-    client.transfer(to="agent_02", amount=999.00)
+    agent_a.transfer(to=agent_b_id, amount=999.00)
 except InsufficientBalanceError:
     print("Out of budget — top up at monospay.com/dashboard")
 except AuthenticationError:
