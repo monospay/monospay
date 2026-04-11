@@ -130,6 +130,14 @@ class MonoClient:
             body["daily_budget"] = daily_budget
         return self._request("POST", "/limits", body=body)
 
+    def inference(self, model: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Proxy an inference request through the mono gateway.
+
+        `model` identifies the target service (e.g. "openai/gpt-4o").
+        `payload` is forwarded as-is to the upstream provider.
+        """
+        return self._request("POST", "/proxy", body={"service": model, "payload": payload})
+
     def transactions(self, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
         """Fetch transaction history for this agent."""
         data = self._request("GET", f"/transactions?limit={limit}&offset={offset}")
