@@ -210,7 +210,8 @@ def cmd_balance(args: argparse.Namespace) -> None:
 
 def cmd_transfer(args: argparse.Namespace) -> None:
     client = get_client()
-    result = client.transfer(to=args.to, amount=args.amount)
+    memo = getattr(args, "memo", "") or ""
+    result = client.transfer(to=args.to, amount=args.amount, memo=memo)
     print(f"\n  {GRN}✓{R}  Sent {args.amount:.2f} USDC → {args.to}")
     print(f"     TX:      {result.transaction_id}")
     print(f"     Balance: {result.sender_balance:.3f} USDC")
@@ -256,6 +257,27 @@ def cmd_health(args: argparse.Namespace) -> None:
         print(f"\n{icon}  {st}  —  {gateway}\n")
     except Exception:
         print(f"\n  {RED}✗{R}  Gateway unreachable: {gateway}\n")
+
+
+# ── mono limits ──────────────────────────────────────────────────────────────
+
+def cmd_limits(args: argparse.Namespace) -> None:
+    client = get_client()
+    kwargs = {}
+    if args.spending_limit is not None:
+        kwargs["spending_limit"] = args.spending_limit
+    if args.daily_budget is not None:
+        kwargs["daily_budget"] = args.daily_budget
+    if not kwargs:
+        print(f"\n  {YLW}!{R}  Specify --spending-limit and/or --daily-budget\n")
+        return
+    result = client.set_limits(**kwargs)
+    print(f"\n  {GRN}✓{R}  Limits updated")
+    if "spending_limit" in result:
+        print(f"     Spending limit: {result['spending_limit']} USDC/tx")
+    if "daily_budget" in result:
+        print(f"     Daily budget:   {result['daily_budget']} USDC/day")
+    print()
 
 
 # ── mono config ───────────────────────────────────────────────────────────────
@@ -312,6 +334,7 @@ def main() -> None:
     p_tr = sub.add_parser("transfer", help="Send USDC to another agent")
     p_tr.add_argument("--to",     required=True,             help="Recipient agent ID")
     p_tr.add_argument("--amount", required=True, type=float, help="Amount in USDC")
+    p_tr.add_argument("--memo",   default="",                help="Optional memo")
 
     p_se = sub.add_parser("settle", help="Settle USDC to another agent")
     p_se.add_argument("--to",     required=True,             help="Recipient agent ID")
@@ -322,6 +345,10 @@ def main() -> None:
     p_charge.add_argument("memo", nargs="?", default="")
 
     sub.add_parser("health", help="Check gateway status")
+
+    p_lim = sub.add_parser("limits", help="Set spending limits")
+    p_lim.add_argument("--spending-limit", type=float, dest="spending_limit", help="Per-transaction limit (USDC)")
+    p_lim.add_argument("--daily-budget",   type=float, dest="daily_budget",   help="Daily budget (USDC)")
 
     p_cfg   = sub.add_parser("config", help="Manage local config")
     cfg_sub = p_cfg.add_subparsers(dest="cfg_cmd", metavar="subcommand")
@@ -340,6 +367,7 @@ def main() -> None:
         elif cmd == "settle":   cmd_settle(args)
         elif cmd == "charge":   cmd_charge(args)
         elif cmd == "health":   cmd_health(args)
+        elif cmd == "limits":  cmd_limits(args)
         elif cmd == "config":
             cc = getattr(args, "cfg_cmd", None)
             if   cc == "show":  cmd_config_show(args)

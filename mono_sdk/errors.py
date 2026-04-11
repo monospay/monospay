@@ -57,6 +57,12 @@ class SystemHaltedError(MonoError):
         super().__init__(message, code="SYSTEM_HALTED", status_code=503, **kwargs)
 
 
+class DailyBudgetExceededError(MonoError):
+    """Transfer would exceed the node's daily budget. (HTTP 422)"""
+    def __init__(self, message: str = "Daily budget exceeded", **kwargs):
+        super().__init__(message, code="DAILY_BUDGET_EXCEEDED", status_code=422, **kwargs)
+
+
 class RateLimitError(MonoError):
     """Too many requests. Back off and retry. (HTTP 429)"""
     def __init__(self, message: str = "Rate limit exceeded", **kwargs):
@@ -77,6 +83,7 @@ ERROR_MAP: dict[str, type[MonoError]] = {
     "SENDER_NODE_LOCKED":     NodeLockedError,
     "INSUFFICIENT_BALANCE":   InsufficientBalanceError,
     "SPENDING_LIMIT_EXCEEDED":SpendingLimitExceededError,
+    "DAILY_BUDGET_EXCEEDED":  DailyBudgetExceededError,
     "RECIPIENT_NOT_FOUND":    RecipientNotFoundError,
     "SYSTEM_HALTED":          SystemHaltedError,
     "RATE_LIMIT":             RateLimitError,

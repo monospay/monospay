@@ -51,11 +51,10 @@ class MonoClient:
 
     # ── Public API ────────────────────────────────────────────────────────
 
-    def settle(self, to: str, amount: float) -> SettleResult:
+    def settle(self, to: str, amount: float, idempotency_key: str | None = None) -> SettleResult:
         """Execute an M2M settlement between agents.
 
         `to` accepts agent name ("Agent 07") or UUID.
-        Names with spaces are URL-encoded automatically.
         """
         if self._spending_limit is not None and amount > self._spending_limit:
             from mono_sdk.errors import SpendingLimitExceededError
@@ -64,33 +63,30 @@ class MonoClient:
                 detail="Client-side pre-flight check.",
             )
 
-        amount_micro  = round(amount * 1_000_000)
-        receiver_enc  = urllib.parse.quote(to, safe="")   # "Agent 07" → "Agent%2007"
         data = self._request(
             "POST",
-            f"/settle?receiver_id={receiver_enc}&amount_micro={amount_micro}",
+            "/settle",
+            body={"receiver_id": to, "amount": amount},
+            extra_headers={"Idempotency-Key": idempotency_key} if idempotency_key else None,
         )
+        return SettleResult.from_dict(data)
 
-        tx_id = data.get("tx_id") or data.get("transaction_id", "")
-        try:
-            bal = self.balance()
-            sender_balance = float(
-                bal.get("balance_usdc", bal.get("available_usdc", 0))
+    def transfer(self, to: str, amount: float, memo: str = "", idempotency_key: str | None = None) -> SettleResult:
+        """Pay another agent by name or UUID via dedicated /transfer endpoint."""
+        if self._spending_limit is not None and amount > self._spending_limit:
+            from mono_sdk.errors import SpendingLimitExceededError
+            raise SpendingLimitExceededError(
+                message=f"Amount {amount} exceeds spending limit of {self._spending_limit} USDC",
+                detail="Client-side pre-flight check.",
             )
-        except Exception:
-            sender_balance = 0.0
 
-        return SettleResult(
-            transaction_id    = str(tx_id),
-            sender_balance    = sender_balance,
-            recipient_balance = 0.0,
-            amount            = amount,
-            status            = "SUCCESS",
+        data = self._request(
+            "POST",
+            "/transfer",
+            body={"to": to, "amount": amount, "memo": memo},
+            extra_headers={"Idempotency-Key": idempotency_key} if idempotency_key else None,
         )
-
-    def transfer(self, to: str, amount: float, memo: str = "") -> SettleResult:
-        """Pay another agent by name or UUID."""
-        return self.settle(to=to, amount=amount)
+        return SettleResult.from_dict(data)
 
     def health(self) -> HealthStatus:
         """Get system health status (no auth required)."""
@@ -125,13 +121,29 @@ class MonoClient:
         """Deduct amount from this agent's budget."""
         return self._request("POST", "/charge", body={"amount": amount, "memo": memo})
 
+    def set_limits(self, spending_limit: float | None = None, daily_budget: float | None = None) -> dict[str, Any]:
+        """Update spending limit and/or daily budget for this agent."""
+        body: dict[str, Any] = {}
+        if spending_limit is not None:
+            body["spending_limit"] = spending_limit
+        if daily_budget is not None:
+            body["daily_budget"] = daily_budget
+        return self._request("POST", "/limits", body=body)
+
+    def transactions(self, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
+        """Fetch transaction history for this agent."""
+        data = self._request("GET", f"/transactions?limit={limit}&offset={offset}")
+        return data.get("transactions", [])
+
     # ── Internal ──────────────────────────────────────────────────────────
 
-    def _request(self, method: str, path: str, body: dict | None = None, auth: bool = True) -> dict[str, Any]:
+    def _request(self, method: str, path: str, body: dict | None = None, auth: bool = True, extra_headers: dict[str, str] | None = None) -> dict[str, Any]:
         url     = f"{self._base_url}{path}"
         headers = {"Content-Type": "application/json"}
         if auth:
             headers["Authorization"] = f"Bearer {self._api_key}"
+        if extra_headers:
+            headers.update({k: v for k, v in extra_headers.items() if v})
         payload    = json.dumps(body).encode("utf-8") if body else None
         last_error: Exception | None = None
 
