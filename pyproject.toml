@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "monospay"
-version = "0.6.0"
+version = "0.6.1"
 description = "Financial infrastructure for autonomous AI agents — monospay.com"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -36,7 +36,7 @@ mono-mcp = "mono_sdk.mcp_server:main"
 [project.urls]
 Homepage      = "https://monospay.com"
 Documentation = "https://monospay.com/docs"
-Repository    = "https://github.com/Agash0818/mono-sdk"
+Repository    = "https://github.com/monospay/monospay"
 
 [tool.hatch.build]
 sources = ["."]
