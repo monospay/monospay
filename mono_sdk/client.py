@@ -140,6 +140,90 @@ class MonoClient:
         """
         return self._request("POST", "/proxy", body={"service": model, "payload": payload})
 
+    def signed_transfer(
+        self,
+        to_wallet: str,
+        amount: float,
+        private_key: str,
+        supabase_url: str = "https://vcearjwptzdijurqxyra.supabase.co",
+        supabase_anon_key: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjZWFyandwdHpkaWp1cnF4eXJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3Njk4MDcsImV4cCI6MjA4OTM0NTgwN30.F7AWQVq_Qq4zs8WPwRKbNsHgoibqRAC5UOFCB1a-tGI",
+    ) -> dict[str, Any]:
+        """Execute a zero-trust ECDSA-signed transfer via Supabase Edge Function.
+
+        No API key needed — the secp256k1 signature IS the auth.
+        Uses EIP-191 personal_sign for verification.
+
+        Args:
+            to_wallet:   Recipient 0x wallet address.
+            amount:      Amount in USDC (e.g. 1.50).
+            private_key: Sender's hex private key (0x-prefixed or raw).
+            supabase_url:      Override Supabase project URL.
+            supabase_anon_key: Override Supabase anon key (for JWT auth on Edge Function).
+
+        Returns:
+            Dict with transaction_id, sender_new_balance, fee, etc.
+        """
+        try:
+            from eth_account import Account
+            from eth_account.messages import encode_defunct
+        except ImportError:
+            raise ImportError(
+                "signed_transfer requires eth-account. Install with: "
+                "pip install eth-account"
+            )
+
+        import uuid as uuid_lib
+        import time as time_mod
+
+        # Derive sender address from private key
+        if not private_key.startswith("0x"):
+            private_key = f"0x{private_key}"
+        acct = Account.from_key(private_key)
+        sender = acct.address.lower()
+        receiver = to_wallet.strip().lower()
+
+        # Build canonical message
+        nonce = str(uuid_lib.uuid4())
+        timestamp = int(time_mod.time() * 1000)  # epoch ms
+        amount_fixed = f"{amount:.6f}"
+        canonical = f"mono-transfer:{sender}:{receiver}:{amount_fixed}:{nonce}:{timestamp}"
+
+        # EIP-191 personal_sign
+        msg = encode_defunct(text=canonical)
+        signed = Account.sign_message(msg, private_key=private_key)
+        signature = signed.signature.hex()
+        if not signature.startswith("0x"):
+            signature = f"0x{signature}"
+
+        # POST to Edge Function
+        url = f"{supabase_url}/functions/v1/transfer"
+        body = {
+            "sender_address": sender,
+            "receiver_address": receiver,
+            "amount": amount,
+            "nonce": nonce,
+            "timestamp": timestamp,
+            "signature": signature,
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {supabase_anon_key}",
+            "apikey": supabase_anon_key,
+        }
+        payload = json.dumps(body).encode("utf-8")
+        req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+
+        try:
+            with urllib.request.urlopen(req, timeout=self._timeout) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            try:
+                error_body = json.loads(e.read().decode("utf-8"))
+            except Exception:
+                error_body = {"error": f"HTTP {e.code}"}
+            raise_for_error(e.code, error_body)
+            return error_body  # unreachable, raise_for_error always raises
+
     def transactions(self, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
         """Fetch transaction history for this agent."""
         data = self._request("GET", f"/transactions?limit={limit}&offset={offset}")

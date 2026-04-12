@@ -4,6 +4,14 @@
 [![Python](https://img.shields.io/pypi/pyversions/mono-m2m-sdk)](https://pypi.org/project/mono-m2m-sdk/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+![LangChain](https://img.shields.io/badge/LangChain-compatible-blue)
+![CrewAI](https://img.shields.io/badge/CrewAI-compatible-blue)
+![OpenAI](https://img.shields.io/badge/OpenAI-function_calling-blue)
+![AutoGen](https://img.shields.io/badge/AutoGen-compatible-blue)
+![Claude](https://img.shields.io/badge/Claude-MCP_server-blue)
+![Cursor](https://img.shields.io/badge/Cursor-MCP_server-blue)
+![Google ADK](https://img.shields.io/badge/Google_ADK-compatible-blue)
+
 Financial infrastructure for autonomous AI agents.  
 Your agent can think. Now it can pay.
 
@@ -12,11 +20,7 @@ Your agent can think. Now it can pay.
 ## Install
 
 ```bash
-# macOS / Linux
-curl -fsSL https://monospay.com/install.sh | bash
-
-# Windows (WSL or Git Bash)
-pip install mono-m2m-sdk && mono init
+pip install mono-m2m-sdk
 ```
 
 Works on macOS, Linux, Windows · Python 3.9+
@@ -42,25 +46,81 @@ The agent names come from your dashboard. You wire them up in your code once —
 ```python
 from mono_sdk import MonoClient
 
-# Each agent has its own API key (from dashboard → Agents → Issue API key)
+# Each agent has its own API key (from dashboard -> Agents -> Issue API key)
 agent_a = MonoClient(api_key="mono_live_...")
 
 # Agent A checks its balance
 balance = agent_a.balance()
-print(f"Budget: ${balance['available_usdc']}")  # → Budget: $50.00
+print(f"Budget: ${balance['available_usdc']}")  # -> Budget: $50.00
 
-# Agent A pays Agent B by name (or by ID)
-result = agent_a.transfer(to="Agent 08", amount=1.50)
-print(result.transaction_id)
+# Agent A pays Agent B (zero-trust, ECDSA-signed)
+result = agent_a.signed_transfer(
+    to_wallet="0x...",
+    amount=1.50,
+    private_key="0x...",
+)
+print(result["transaction_id"])
 ```
 
-No wallets. No gas. No KYC.
+No wallets to manage. No gas. No KYC.
+
+---
+
+## Signed Transfers (Zero-Trust)
+
+All money movement uses ECDSA signatures. No API key can move funds — only a cryptographic proof from the sender's private key.
+
+### Canonical message format
+
+```
+mono-transfer:{sender}:{receiver}:{amount}:{nonce}:{timestamp}
+```
+
+- `sender` / `receiver` — lowercase 0x addresses
+- `amount` — 6 decimal fixed point (e.g. `1.500000`)
+- `nonce` — UUID v4
+- `timestamp` — epoch milliseconds
+
+### Signing with eth-account
+
+```python
+from eth_account import Account
+from eth_account.messages import encode_defunct
+import uuid, time
+
+sender = "0xabc..."
+receiver = "0xdef..."
+amount = "1.500000"
+nonce = str(uuid.uuid4())
+ts = int(time.time() * 1000)
+
+canonical = f"mono-transfer:{sender}:{receiver}:{amount}:{nonce}:{ts}"
+
+msg = encode_defunct(text=canonical)
+signed = Account.sign_message(msg, private_key="0x...")
+signature = f"0x{signed.signature.hex()}"
+```
+
+### Using the SDK
+
+```python
+from mono_sdk import MonoClient
+
+client = MonoClient(api_key="mono_live_...")
+
+result = client.signed_transfer(
+    to_wallet="0xReceiverAddress",
+    amount=5.00,
+    private_key="0xYourPrivateKey",
+)
+# -> { "transaction_id": "...", "sender_new_balance": 45.0, "fee": 0.015 }
+```
+
+> **Deprecated:** `transfer()` and `settle()` use API-key-based auth and are permanently disabled on the gateway (HTTP 410). Use `signed_transfer()` or MCP tools instead.
 
 ---
 
 ## 2-Agent Example
-
-A copy-paste script showing two agents paying each other:
 
 ```python
 from mono_sdk import MonoClient
@@ -68,13 +128,12 @@ from mono_sdk import MonoClient
 agent_a = MonoClient(api_key="mono_live_A...")
 agent_b = MonoClient(api_key="mono_live_B...")
 
-# Agent A pays Agent B
-agent_a.transfer(to="Agent B", amount=0.50, memo="API call fee")
-print(f"A balance: ${agent_a.balance()['available_usdc']}")
-print(f"B balance: ${agent_b.balance()['available_usdc']}")
-
-# Agent B pays Agent A back
-agent_b.transfer(to="Agent A", amount=0.25, memo="Refund")
+# Agent A pays Agent B (ECDSA-signed)
+agent_a.signed_transfer(
+    to_wallet="0xAgentB_Wallet",
+    amount=0.50,
+    private_key="0xAgentA_Key",
+)
 print(f"A balance: ${agent_a.balance()['available_usdc']}")
 print(f"B balance: ${agent_b.balance()['available_usdc']}")
 ```
@@ -89,16 +148,6 @@ The CLI lets you inspect and manage your agents from the terminal.
 mono balance          # Show your agent's balance
 mono health           # Check gateway status
 mono config show      # Show current config
-```
-
-Transfers happen in your code via the Python SDK — not manually via CLI.
-
----
-
-## Where do I find the agent name or ID?
-
-```
-monospay.com/dashboard → Agents → your agent name is shown in the list
 ```
 
 ---
@@ -118,18 +167,31 @@ tools   = toolkit.get_tools()
 
 ---
 
-## Error handling
+## MCP Server
 
-```python
-from mono_sdk.errors import InsufficientBalanceError, AuthenticationError
+Works with Claude Desktop, Cursor, Windsurf, and any MCP-compatible agent.
 
-try:
-    agent_a.transfer(to="Agent 08", amount=999.00)
-except InsufficientBalanceError:
-    print("Out of budget — top up at monospay.com/dashboard")
-except AuthenticationError:
-    print("Invalid key — run: mono init")
+```bash
+pip install "mono-m2m-sdk[mcp]"
 ```
+
+Claude Desktop config (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "mono": {
+      "command": "mono-mcp",
+      "env": {
+        "MONO_API_KEY": "mono_live_...",
+        "MONO_PRIVATE_KEY": "0x..."
+      }
+    }
+  }
+}
+```
+
+Available tools: `check_balance`, `signed_transfer`, `list_transactions`, `check_health`.
 
 ---
 
@@ -144,13 +206,28 @@ tools = get_mono_tools()
 
 ---
 
-## What's in v0.5
+## Error handling
 
-- Idempotency keys on all mutations
-- Separate `transfer()` and `settle()` endpoints
-- `set_limits()` for server-side spending controls
-- `transactions()` for payment history
-- `inference()` for LLM proxy calls
+```python
+from mono_sdk.errors import InsufficientBalanceError, AuthenticationError
+
+try:
+    agent_a.signed_transfer(to_wallet="0x...", amount=999.00, private_key="0x...")
+except InsufficientBalanceError:
+    print("Out of budget — top up at monospay.com/dashboard")
+except AuthenticationError:
+    print("Invalid key — run: mono init")
+```
+
+---
+
+## What's in v0.6
+
+- **MCP Server** — `mono-mcp` entry point for Claude Desktop, Cursor, Windsurf
+- **ECDSA signed transfers** — zero-trust auth, no API key can move funds
+- **Spending limits** — `set_limits(spending_limit=100, daily_budget=25)`
+- **Transaction history** — `transactions(limit=20)`
+- **API-key transfers retired** — `transfer()` / `settle()` return HTTP 410
 
 ---
 
@@ -159,5 +236,5 @@ tools = get_mono_tools()
 - Dashboard · [monospay.com](https://monospay.com)
 - Docs · [monospay.com/docs](https://monospay.com/docs)
 - PyPI · [mono-m2m-sdk](https://pypi.org/project/mono-m2m-sdk/)
-- Contract · [BaseScan 0xA9DC3105…](https://basescan.org/address/0xA9DC3105ec1A84E4Bc3c9702dFC772a6efA2CDBA)
+- Contract · [BaseScan 0xA9DC3105...](https://basescan.org/address/0xA9DC3105ec1A84E4Bc3c9702dFC772a6efA2CDBA)
 - Built on [Base](https://base.org) · Settled in [USDC](https://www.circle.com/usdc)
