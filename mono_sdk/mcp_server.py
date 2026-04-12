@@ -381,24 +381,41 @@ async def security_docs() -> str:
 
 def main():
     """CLI entry point for mono-mcp command."""
-    missing = []
-    if not MONO_PRIVATE_KEY:
-        missing.append("MONO_PRIVATE_KEY (required for transfers)")
-    if not MONO_API_KEY:
-        missing.append("MONO_API_KEY (required for balance/history)")
+    has_key = bool(MONO_API_KEY)
+    has_pk = bool(MONO_PRIVATE_KEY)
 
-    if missing:
-        print("⚠  Missing environment variables:", file=sys.stderr)
-        for m in missing:
-            print(f"   • {m}", file=sys.stderr)
-        print(file=sys.stderr)
+    if not has_key and not has_pk:
+        print("", file=sys.stderr)
+        print("  monospay · payment infrastructure for AI agents", file=sys.stderr)
+        print("  ─────────────────────────────────────────────────", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("  Almost there! Two steps to connect your agent:", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("  1. Get your keys at monospay.com/dashboard", file=sys.stderr)
+        print("     → Agents → select agent → Issue API key", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("  2. Set them in your environment:", file=sys.stderr)
+        print("     export MONO_API_KEY=mono_live_...", file=sys.stderr)
+        print("     export MONO_PRIVATE_KEY=0x...", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("  Or add them to your Claude Desktop config:", file=sys.stderr)
+        print('  {"mcpServers":{"mono":{"command":"mono-mcp",', file=sys.stderr)
+        print('    "env":{"MONO_API_KEY":"mono_live_...",', file=sys.stderr)
+        print('           "MONO_PRIVATE_KEY":"0x..."}}}', file=sys.stderr)
+        print("", file=sys.stderr)
+    else:
+        print("", file=sys.stderr)
+        print("  ✓ monospay ready — your agent can pay.", file=sys.stderr)
+        print(f"    API key: {'✓' if has_key else '✗'}  Private key: {'✓' if has_pk else '✗'}", file=sys.stderr)
+        print("    Tools: mono_balance, mono_transfer, mono_transactions", file=sys.stderr)
+        print("", file=sys.stderr)
 
     if "--http" in sys.argv:
         port = 8080
         for i, arg in enumerate(sys.argv):
             if arg == "--port" and i + 1 < len(sys.argv):
                 port = int(sys.argv[i + 1])
-        print(f"mono MCP server (zero-trust) · http://0.0.0.0:{port}", file=sys.stderr)
+        print(f"  Listening on http://0.0.0.0:{port}", file=sys.stderr)
         mcp.run(transport="streamable_http", port=port)
     else:
         mcp.run()

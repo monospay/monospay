@@ -15,6 +15,8 @@
 Financial infrastructure for autonomous AI agents.  
 Your agent can think. Now it can pay.
 
+![Demo](demo.gif)
+
 ---
 
 ## Install
