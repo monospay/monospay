@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "mono-m2m-sdk"
+name = "monospay"
 version = "0.6.0"
 description = "Financial infrastructure for autonomous AI agents — monospay.com"
 readme = "README.md"

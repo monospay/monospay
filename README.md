@@ -1,7 +1,7 @@
 # mono SDK
 
-[![PyPI](https://img.shields.io/pypi/v/mono-m2m-sdk)](https://pypi.org/project/mono-m2m-sdk/)
-[![Python](https://img.shields.io/pypi/pyversions/mono-m2m-sdk)](https://pypi.org/project/mono-m2m-sdk/)
+[![PyPI](https://img.shields.io/pypi/v/monospay)](https://pypi.org/project/monospay/)
+[![Python](https://img.shields.io/pypi/pyversions/monospay)](https://pypi.org/project/monospay/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ![LangChain](https://img.shields.io/badge/LangChain-compatible-blue)
@@ -20,7 +20,7 @@ Your agent can think. Now it can pay.
 ## Install
 
 ```bash
-pip install mono-m2m-sdk
+pip install monospay
 ```
 
 Works on macOS, Linux, Windows · Python 3.9+
@@ -155,7 +155,7 @@ mono config show      # Show current config
 ## LangChain
 
 ```bash
-pip install "mono-m2m-sdk[langchain]"
+pip install "monospay[langchain]"
 ```
 
 ```python
@@ -172,7 +172,7 @@ tools   = toolkit.get_tools()
 Works with Claude Desktop, Cursor, Windsurf, and any MCP-compatible agent.
 
 ```bash
-pip install "mono-m2m-sdk[mcp]"
+pip install "monospay[mcp]"
 ```
 
 Claude Desktop config (`claude_desktop_config.json`):
@@ -235,6 +235,6 @@ except AuthenticationError:
 
 - Dashboard · [monospay.com](https://monospay.com)
 - Docs · [monospay.com/docs](https://monospay.com/docs)
-- PyPI · [mono-m2m-sdk](https://pypi.org/project/mono-m2m-sdk/)
+- PyPI · [monospay](https://pypi.org/project/monospay/)
 - Contract · [BaseScan 0xA9DC3105...](https://basescan.org/address/0xA9DC3105ec1A84E4Bc3c9702dFC772a6efA2CDBA)
 - Built on [Base](https://base.org) · Settled in [USDC](https://www.circle.com/usdc)
