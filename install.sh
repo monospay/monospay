@@ -138,19 +138,6 @@ p.write_text(json.dumps(cfg, indent=2))
 p.chmod(0o600)
 PYEOF
 
-# Write to shell profile
-PROFILE=""
-case "$(basename "${SHELL:-sh}")" in
-  zsh)  PROFILE="$HOME/.zshrc" ;;
-  bash) PROFILE="$HOME/.bash_profile" ;;
-  *)    PROFILE="$HOME/.profile" ;;
-esac
-if [ -n "$PROFILE" ]; then
-  grep -v 'MONO_API_KEY' "$PROFILE" > "${PROFILE}.tmp" 2>/dev/null \
-    && mv "${PROFILE}.tmp" "$PROFILE" || true
-  printf '\n# mono SDK\nexport MONO_API_KEY="%s"\n' "$API_KEY" >> "$PROFILE"
-fi
-
 # Run mono init with key already saved — skip the interactive prompt
 printf "\n"
 MONO_BIN=""

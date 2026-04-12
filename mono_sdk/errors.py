@@ -92,8 +92,12 @@ ERROR_MAP: dict[str, type[MonoError]] = {
 
 def raise_for_error(status_code: int, body: dict) -> None:
     """Parse an API error response and raise the appropriate exception."""
-    code    = body.get("code") or body.get("message") or "UNKNOWN"
-    message = body.get("message", "Unknown error")
-    detail  = body.get("detail")
+    # FastAPI wraps HTTPException dicts in {"detail": {...}}
+    detail_val = body.get("detail")
+    if isinstance(detail_val, dict):
+        body = detail_val
+    code    = body.get("code") or body.get("error") or body.get("message") or "UNKNOWN"
+    message = body.get("message", str(body))
+    detail  = body.get("detail") if isinstance(body.get("detail"), str) else None
     exc_class = ERROR_MAP.get(code, MonoError)
     raise exc_class(message=message, detail=detail)

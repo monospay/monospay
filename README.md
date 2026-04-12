@@ -1,5 +1,9 @@
 # mono SDK
 
+[![PyPI](https://img.shields.io/pypi/v/mono-m2m-sdk)](https://pypi.org/project/mono-m2m-sdk/)
+[![Python](https://img.shields.io/pypi/pyversions/mono-m2m-sdk)](https://pypi.org/project/mono-m2m-sdk/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Financial infrastructure for autonomous AI agents.  
 Your agent can think. Now it can pay.
 
@@ -54,6 +58,29 @@ No wallets. No gas. No KYC.
 
 ---
 
+## 2-Agent Example
+
+A copy-paste script showing two agents paying each other:
+
+```python
+from mono_sdk import MonoClient
+
+agent_a = MonoClient(api_key="mono_live_A...")
+agent_b = MonoClient(api_key="mono_live_B...")
+
+# Agent A pays Agent B
+agent_a.transfer(to="Agent B", amount=0.50, memo="API call fee")
+print(f"A balance: ${agent_a.balance()['available_usdc']}")
+print(f"B balance: ${agent_b.balance()['available_usdc']}")
+
+# Agent B pays Agent A back
+agent_b.transfer(to="Agent A", amount=0.25, memo="Refund")
+print(f"A balance: ${agent_a.balance()['available_usdc']}")
+print(f"B balance: ${agent_b.balance()['available_usdc']}")
+```
+
+---
+
 ## CLI — for developers
 
 The CLI lets you inspect and manage your agents from the terminal.
@@ -103,6 +130,27 @@ except InsufficientBalanceError:
 except AuthenticationError:
     print("Invalid key — run: mono init")
 ```
+
+---
+
+## OpenAI Function Calling
+
+```python
+from mono_sdk.openai_functions import get_mono_tools, handle_tool_call
+
+tools = get_mono_tools()
+# Pass tools to your OpenAI chat completion
+```
+
+---
+
+## What's in v0.5
+
+- Idempotency keys on all mutations
+- Separate `transfer()` and `settle()` endpoints
+- `set_limits()` for server-side spending controls
+- `transactions()` for payment history
+- `inference()` for LLM proxy calls
 
 ---
 

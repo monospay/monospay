@@ -22,7 +22,7 @@ from mono_sdk.models import HealthStatus, NodeInfo, SettleResult
 
 logger = logging.getLogger("mono_sdk")
 
-DEFAULT_BASE_URL     = "https://mono-production-b257.up.railway.app/v1"
+DEFAULT_BASE_URL     = "https://api.monospay.com/v1"
 DEFAULT_TIMEOUT      = 30
 DEFAULT_MAX_RETRIES  = 3
 DEFAULT_BACKOFF_BASE = 1.0
@@ -63,10 +63,11 @@ class MonoClient:
                 detail="Client-side pre-flight check.",
             )
 
+        amount_micro = round(amount * 1_000_000)
         data = self._request(
             "POST",
             "/settle",
-            body={"receiver_id": to, "amount": amount},
+            body={"receiver_id": to, "amount_micro": amount_micro},
             extra_headers={"Idempotency-Key": idempotency_key} if idempotency_key else None,
         )
         return SettleResult.from_dict(data)
@@ -80,10 +81,11 @@ class MonoClient:
                 detail="Client-side pre-flight check.",
             )
 
+        amount_micro = round(amount * 1_000_000)
         data = self._request(
             "POST",
             "/transfer",
-            body={"to": to, "amount": amount, "memo": memo},
+            body={"receiver_id": to, "amount_micro": amount_micro, "memo": memo},
             extra_headers={"Idempotency-Key": idempotency_key} if idempotency_key else None,
         )
         return SettleResult.from_dict(data)
