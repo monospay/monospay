@@ -173,7 +173,7 @@ tools   = toolkit.get_tools()
 
 Works with Claude Desktop, Cursor, Windsurf, and any MCP-compatible agent.
 
-Add to your Claude Desktop config (`claude_desktop_config.json`):
+Add to your Claude Desktop config:
 
 ```json
 {
@@ -182,13 +182,25 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
       "command": "npx",
       "args": ["-y", "monospay-mcp"],
       "env": {
-        "MONO_API_KEY": "mono_live_...",
-        "MONO_PRIVATE_KEY": "0x..."
+        "MONO_API_KEY": "mono_live_..."
       }
     }
   }
 }
 ```
+
+Restart Claude Desktop. Ask: **"Check my monospay balance"**
+
+Ready to move money? Add `"MONO_PRIVATE_KEY": "0x..."` to env.
+
+| With API key only | + Private Key |
+|---|---|
+| ✅ Check balance | ✅ Check balance |
+| ✅ View transactions | ✅ View transactions |
+| ✅ Set spending limits | ✅ Set spending limits |
+| ❌ Transfer USDC | ✅ **Transfer USDC** |
+
+Your private key never leaves your machine.
 
 No install needed — `npx` downloads and runs it automatically.
 
