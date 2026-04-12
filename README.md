@@ -22,7 +22,7 @@ Payment infrastructure for AI agents.
 ## Install
 
 ```bash
-pip install monospay[mcp]
+pip install "monospay[mcp]"
 ```
 
 Then run:

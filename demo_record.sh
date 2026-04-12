@@ -25,7 +25,7 @@ clear
 # ── Step 1: Install ───────────────────────────────────────────────────
 
 echo -e "${DIM}# Step 1: Install${RESET}"
-echo -e "$ pip install monospay[mcp]"
+echo -e "$ pip install \"monospay[mcp]\""
 slow
 echo "Collecting monospay[mcp]"
 sleep 0.2
@@ -79,9 +79,9 @@ echo -e "${BOLD}  ────────────────────�
 echo -e "${BOLD}  monospay.com — Your agent can pay.${RESET}"
 echo -e "${BOLD}  ──────────────────────────────────────${RESET}"
 echo ""
-echo -e "  ${DIM}pip install monospay          # Python SDK${RESET}"
-echo -e "  ${DIM}pip install monospay[mcp]     # MCP Server${RESET}"
-echo -e "  ${DIM}pip install monospay[langchain] # LangChain${RESET}"
+echo -e "  ${DIM}pip install monospay              # Python SDK${RESET}"
+echo -e "  ${DIM}pip install \"monospay[mcp]\"      # MCP Server${RESET}"
+echo -e "  ${DIM}pip install \"monospay[langchain]\" # LangChain${RESET}"
 echo ""
 
 sleep 3
