@@ -173,17 +173,14 @@ tools   = toolkit.get_tools()
 
 Works with Claude Desktop, Cursor, Windsurf, and any MCP-compatible agent.
 
-```bash
-pip install "monospay[mcp]"
-```
-
-Claude Desktop config (`claude_desktop_config.json`):
+Add to your Claude Desktop config (`claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
-    "mono": {
-      "command": "mono-mcp",
+    "monospay": {
+      "command": "npx",
+      "args": ["-y", "monospay-mcp"],
       "env": {
         "MONO_API_KEY": "mono_live_...",
         "MONO_PRIVATE_KEY": "0x..."
@@ -193,7 +190,20 @@ Claude Desktop config (`claude_desktop_config.json`):
 }
 ```
 
-Available tools: `check_balance`, `signed_transfer`, `list_transactions`, `check_health`.
+No install needed — `npx` downloads and runs it automatically.
+
+<details>
+<summary>Alternative: pip / uvx</summary>
+
+```bash
+pip install "monospay[mcp]"
+mono-mcp
+```
+
+Or with uvx: `uvx --from "monospay[mcp]" mono-mcp`
+</details>
+
+Available tools: `mono_balance`, `mono_transfer`, `mono_transactions`, `mono_health`.
 
 ---
 
