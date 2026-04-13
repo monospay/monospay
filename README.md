@@ -13,59 +13,52 @@
 ![Google ADK](https://img.shields.io/badge/Google_ADK-compatible-blue)
 
 Payment infrastructure for AI agents.  
-`pip install monospay` · Your agent can pay.
-
-![Demo](demo.gif)
+Your agent can pay.
 
 ---
 
-## Install
+## Get started
+
+**Claude Desktop / Cursor** — paste into your config, done:
+
+```json
+{
+  "mcpServers": {
+    "monospay": {
+      "command": "npx",
+      "args": ["-y", "monospay-mcp"],
+      "env": { "MONO_API_KEY": "mono_live_..." }
+    }
+  }
+}
+```
+
+**Python SDK** — 3 lines of code:
 
 ```bash
-pip install "monospay[mcp]"
+pip install monospay
 ```
 
-Then run:
-
-```bash
-mono-mcp
+```python
+from mono_sdk import MonoClient
+client = MonoClient(api_key="mono_live_...")
+client.signed_transfer(to_wallet="0x...", amount=1.00, private_key="0x...")
 ```
 
-```
-  monospay · payment infrastructure for AI agents
-  ─────────────────────────────────────────────────
+**Dashboard** — no code, manage everything in your browser:  
+[monospay.com/dashboard](https://monospay.com/dashboard)
 
-  Almost there! Two steps to connect your agent:
-
-  1. Get your keys at monospay.com/dashboard
-     → Agents → select agent → Issue API key
-
-  2. export MONO_API_KEY=mono_live_...
-     export MONO_PRIVATE_KEY=0x...
-```
-
-Set your keys, run `mono-mcp` again:
-
-```
-  ✓ monospay ready — your agent can pay.
-    Tools: mono_balance, mono_transfer, mono_transactions
-```
-
-Works on macOS, Linux, Windows · Python 3.9+
+Get your API key at [monospay.com/dashboard](https://monospay.com/dashboard) → Agents → Issue API key.
 
 ---
 
-## How it works
+## Why monospay
 
-mono is for **developers building AI agents** — not end users.
-
-```
-1. You create agents on monospay.com/dashboard
-2. Each agent gets a unique ID and API key
-3. Your code uses the SDK to transfer USDC between agents automatically
-```
-
-The agent names come from your dashboard. You wire them up in your code once — then agents pay each other autonomously.
+- **10 minutes to first payment** — paste config or pip install, your agent pays
+- **Works with every AI framework** — LangChain, CrewAI, OpenAI, Claude, Cursor, Google ADK
+- **Sub-cent transactions** — no $0.30 minimum like card networks
+- **Agents don't need bank accounts** — just a wallet and a private key
+- **You stay in control** — spending limits, daily budgets, transaction history
 
 ---
 
@@ -102,23 +95,6 @@ No wallets to manage. No gas. No KYC.
 - Open-source smart contract on [Base](https://basescan.org/address/0xA9DC3105ec1A84E4Bc3c9702dFC772a6efA2CDBA) (verified)
 
 > See [SECURITY.md](SECURITY.md) for technical details on the signing protocol.
-
-### Using the SDK
-
-```python
-from mono_sdk import MonoClient
-
-client = MonoClient(api_key="mono_live_...")
-
-result = client.signed_transfer(
-    to_wallet="0xReceiverAddress",
-    amount=5.00,
-    private_key="0xYourPrivateKey",
-)
-# -> { "transaction_id": "...", "sender_new_balance": 45.0 }
-```
-
-> **Deprecated:** `transfer()` and `settle()` are permanently disabled. Use `signed_transfer()` or MCP tools instead.
 
 ---
 
@@ -169,29 +145,7 @@ tools   = toolkit.get_tools()
 
 ---
 
-## MCP Server
-
-Works with Claude Desktop, Cursor, Windsurf, and any MCP-compatible agent.
-
-Add to your Claude Desktop config:
-
-```json
-{
-  "mcpServers": {
-    "monospay": {
-      "command": "npx",
-      "args": ["-y", "monospay-mcp"],
-      "env": {
-        "MONO_API_KEY": "mono_live_..."
-      }
-    }
-  }
-}
-```
-
-Restart Claude Desktop. Ask: **"Check my monospay balance"**
-
-Ready to move money? Add `"MONO_PRIVATE_KEY": "0x..."` to env.
+## MCP Server — details
 
 | With API key only | + Private Key |
 |---|---|
@@ -201,8 +155,6 @@ Ready to move money? Add `"MONO_PRIVATE_KEY": "0x..."` to env.
 | ❌ Transfer USDC | ✅ **Transfer USDC** |
 
 Your private key never leaves your machine.
-
-No install needed — `npx` downloads and runs it automatically.
 
 <details>
 <summary>Alternative: pip / uvx</summary>
@@ -242,16 +194,6 @@ except InsufficientBalanceError:
 except AuthenticationError:
     print("Invalid key — run: mono init")
 ```
-
----
-
-## Why monospay
-
-- **10 minutes to first payment** — `pip install`, set keys, your agent pays
-- **Works with every AI framework** — LangChain, CrewAI, OpenAI, Claude, Cursor, Google ADK
-- **Sub-cent transactions** — no $0.30 minimum like card networks
-- **Agents don't need bank accounts** — just a wallet and a private key
-- **You stay in control** — spending limits, daily budgets, transaction history
 
 ---
 
