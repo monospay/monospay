@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "monospay"
+version = "0.6.3"
+description = "Payments for AI agents — monospay.com"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "mono", email = "hello@monospay.com" }]
+keywords = ["ai", "agents", "payments", "mcp", "langchain", "openai", "crewai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = []
+
+[project.optional-dependencies]
+langchain = ["langchain-core>=0.1.0"]
+mcp = ["mcp>=1.0.0", "pydantic>=2.0.0"]
+
+[project.scripts]
+mono = "mono_sdk.cli:main"
+mono-mcp = "mono_sdk.mcp_server:main"
+
+[project.urls]
+Homepage      = "https://monospay.com"
+Documentation = "https://monospay.com/docs"
+Repository    = "https://github.com/monospay/monospay"
+
+[tool.hatch.build]
+sources = ["."]
+
+[tool.hatch.build.targets.wheel]
+packages = ["mono_sdk"]
+
+[tool.hatch.build.targets.sdist]
+include = ["mono_sdk/**/*.py", "README.md", "pyproject.toml"]
