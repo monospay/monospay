@@ -1,32 +1,14 @@
 """
-mono MCP Server — Zero-Trust Financial Infrastructure for AI Agents.
-
-SECURITY MODEL:
-  All money movement requires ECDSA signature (EIP-191 secp256k1).
-  No API keys can move funds. The private key never leaves this process.
-  Read-only operations (balance, transactions) use API keys for convenience.
+monospay MCP Server — AI agent payments.
 
 Environment:
-    MONO_PRIVATE_KEY   Required for transfers. Hex private key (0x-prefixed).
+    MONO_PRIVATE_KEY   Required for transfers.
     MONO_API_KEY       Required for read-only operations (balance, history).
-    MONO_API_BASE      Optional. Override gateway URL (default: https://api.monospay.com/v1)
+    MONO_API_BASE      Optional. Override gateway URL.
 
 Usage:
-    mono-mcp                                      # stdio (Claude Desktop, Cursor)
-    mono-mcp --http --port 8080                   # Streamable HTTP (remote agents)
-
-Claude Desktop config (~/.config/claude/claude_desktop_config.json):
-    {
-      "mcpServers": {
-        "mono": {
-          "command": "mono-mcp",
-          "env": {
-            "MONO_PRIVATE_KEY": "0x...",
-            "MONO_API_KEY": "mono_live_..."
-          }
-        }
-      }
-    }
+    mono-mcp                          # stdio (Claude Desktop, Cursor)
+    mono-mcp --http --port 8080       # Streamable HTTP (remote agents)
 """
 
 from __future__ import annotations
@@ -48,6 +30,7 @@ MONO_API_BASE = os.environ.get("MONO_API_BASE", "https://api.monospay.com/v1")
 MONO_API_KEY = os.environ.get("MONO_API_KEY", "")
 MONO_PRIVATE_KEY = os.environ.get("MONO_PRIVATE_KEY", "")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://vcearjwptzdijurqxyra.supabase.co")
+# Public anon key — read-only, safe to embed
 SUPABASE_ANON_KEY = os.environ.get(
     "SUPABASE_ANON_KEY",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjZWFyandwdHpkaWp1cnF4eXJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3Njk4MDcsImV4cCI6MjA4OTM0NTgwN30.F7AWQVq_Qq4zs8WPwRKbNsHgoibqRAC5UOFCB1a-tGI",
@@ -64,7 +47,7 @@ def _gateway_request(method: str, path: str, body: dict | None = None) -> dict[s
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {MONO_API_KEY}",
-        "User-Agent": "mono-mcp/2.0-ecdsa",
+        "User-Agent": "monospay/1.0",
     }
     payload = json.dumps(body).encode("utf-8") if body else None
 
@@ -90,7 +73,7 @@ def _signed_edge_request(
     timestamp: int,
     signature: str,
 ) -> dict[str, Any]:
-    """Send ECDSA-signed transfer to Supabase Edge Function. Zero-trust."""
+    """Send signed transfer to edge function."""
     url = f"{SUPABASE_URL}/functions/v1/transfer"
     body = {
         "sender_address": sender,
@@ -104,7 +87,7 @@ def _signed_edge_request(
         "Content-Type": "application/json",
         "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
         "apikey": SUPABASE_ANON_KEY,
-        "User-Agent": "mono-mcp/2.0-ecdsa",
+        "User-Agent": "monospay/1.0",
     }
     payload = json.dumps(body).encode("utf-8")
 
@@ -175,11 +158,9 @@ def _sign_transfer(receiver: str, amount: float) -> dict[str, Any]:
 mcp = FastMCP(
     "mono_mcp",
     instructions=(
-        "mono is a zero-trust payment infrastructure for AI agents. "
-        "All transfers are cryptographically signed with ECDSA (EIP-191). "
-        "No API key can move funds — the private key IS the identity. "
-        "Use mono_transfer to send USDC, mono_balance to check funds. "
-        "All amounts are in USDC on Base L2."
+        "monospay lets AI agents send payments. "
+        "Use mono_transfer to send money, mono_balance to check funds. "
+        "All amounts are in USD."
     ),
 )
 
@@ -200,7 +181,7 @@ async def mono_health() -> str:
     """Check if the mono payment gateway is online and healthy."""
     try:
         url = f"{MONO_API_BASE}/health"
-        req = urllib.request.Request(url, method="GET", headers={"User-Agent": "mono-mcp/2.0-ecdsa"})
+        req = urllib.request.Request(url, method="GET", headers={"User-Agent": "monospay/1.0"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             return json.dumps(json.loads(resp.read().decode("utf-8")), indent=2)
     except Exception as e:
@@ -255,7 +236,7 @@ class TransferInput(BaseModel):
 @mcp.tool(
     name="mono_transfer",
     annotations={
-        "title": "Transfer USDC (ECDSA Signed)",
+        "title": "Send Payment",
         "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": False,
@@ -263,20 +244,7 @@ class TransferInput(BaseModel):
     },
 )
 async def mono_transfer(params: TransferInput) -> str:
-    """Send USDC to another agent using ECDSA signature authentication.
-
-    ZERO-TRUST: No API key can move funds. The EIP-191 secp256k1 signature
-    IS the authentication. The private key never leaves this local process.
-
-    Requires MONO_PRIVATE_KEY environment variable.
-    Replay protection: UUID nonce + ±5min timestamp window.
-
-    Args:
-        params: TransferInput with to (0x wallet address) and amount (USDC)
-
-    Returns:
-        JSON with: status, transaction_id, sender, receiver, amount, fee, sender_new_balance
-    """
+    """Send money to another agent. Requires MONO_PRIVATE_KEY."""
     signed = _sign_transfer(params.to, params.amount)
     if "error" in signed:
         return _format_result(signed)
@@ -354,29 +322,6 @@ async def mono_set_limits(params: SetLimitsInput) -> str:
     return _format_result(result)
 
 
-# ── Resource ──────────────────────────────────────────────────────────────────
-
-@mcp.resource("mono://docs/security")
-async def security_docs() -> str:
-    """mono Zero-Trust security model documentation."""
-    return (
-        "# mono Zero-Trust Security\n\n"
-        "## Architecture\n"
-        "- All transfers require ECDSA signature (EIP-191 secp256k1)\n"
-        "- API keys CANNOT move funds — they are read-only\n"
-        "- Private key never leaves the local MCP process\n"
-        "- Replay protection: UUID nonce + ±5min timestamp\n"
-        "- Rate limiting: 30 transfers per 60s per wallet\n\n"
-        "## Canonical Message Format\n"
-        "```\n"
-        "mono-transfer:{sender}:{receiver}:{amount.toFixed(6)}:{nonce}:{timestamp}\n"
-        "```\n\n"
-        "## Environment Variables\n"
-        "- MONO_PRIVATE_KEY: Hex private key (0x-prefixed) — for signing transfers\n"
-        "- MONO_API_KEY: Agent API key — for read-only operations only\n"
-    )
-
-
 # ── Entry Point ───────────────────────────────────────────────────────────────
 
 def main():
@@ -386,7 +331,7 @@ def main():
 
     if not has_key and not has_pk:
         print("", file=sys.stderr)
-        print("  monospay · payment infrastructure for AI agents", file=sys.stderr)
+        print("  monospay · your AI agent can send payments", file=sys.stderr)
         print("  ─────────────────────────────────────────────────", file=sys.stderr)
         print("", file=sys.stderr)
         print("  Almost there! Two steps to connect your agent:", file=sys.stderr)
