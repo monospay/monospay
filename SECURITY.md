@@ -1,6 +1,6 @@
 # Security
 
-All transfers are cryptographically signed. No API key can move funds.
+All transfers are cryptographically signed. No API key can move funds — only a private key held by the agent owner.
 
 - Replay protection built in
 - Server-side spending limits
@@ -8,4 +8,4 @@ All transfers are cryptographically signed. No API key can move funds.
 
 ## Reporting Vulnerabilities
 
-Email security@monospay.com. Do not open public issues.
+Email security@monospay.com. Do not open public issues for security vulnerabilities.

@@ -12,8 +12,8 @@
 ![Cursor](https://img.shields.io/badge/Cursor-MCP_server-blue)
 ![Google ADK](https://img.shields.io/badge/Google_ADK-compatible-blue)
 
-Payment infrastructure for AI agents.  
-Your agent can pay.
+Your AI agent can send payments.  
+`pip install monospay` · Your agent can pay.
 
 ---
 
